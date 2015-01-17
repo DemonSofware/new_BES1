@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans 	xmlns="http://www.springframework.org/schema/beans"
+		xmlns:context="http://www.springframework.org/schema/context"
+		xmlns:tx="http://www.springframework.org/schema/tx"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://www.springframework.org/schema/beans
+							http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+							http://www.springframework.org/schema/context 
+   							http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+	
+	<bean id="iBackCon" class="org.springframework.remoting.caucho.BurlapProxyFactoryBean">
+		<property name="serviceUrl" value="http://localhost:8080/MAT_BES2/back_connector.service"/>
+		<property name="serviceInterface" value="mat.IBackConnector"/>
+	</bean>
+	
+	<!-- ************ MAIL SENDER *************** -->
+	<bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+   <property name="host"><value>smtp.gmail.com</value></property>
+        <property name="port"><value>587</value></property>
+        <property name="protocol"><value>smtp</value></property>
+        <property name="username"><value>myavailabletime.noreply@gmail.com</value></property>
+        <property name="password"><value>myavailable</value></property>
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.smtp.starttls.enable">true</prop>
+                <prop key="mail.smtp.quitwait">false</prop>
+                <prop key="mail.debug">false</prop>
+            </props>
+        </property>
+</bean>
+<bean id="templateMessage" class="org.springframework.mail.SimpleMailMessage">
+    <property name="from" value="anatoly.tihonov@gmail.com"/>
+    <property name="subject" value="Activate"/>
+</bean>
+<bean id="sender" class= "mail.SendActivationMail">
+<constructor-arg name="id" value="1"></constructor-arg>
+<property name="msender" ref="mailSender"></property>
+<property name="template" ref="templateMessage"></property>
+</bean>
+
+</beans>
