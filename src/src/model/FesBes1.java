@@ -656,5 +656,11 @@ public class FesBes1 implements IFesBes1 {
 		return result;
 		}
 
+		@Override
+		public List<Matt> getCheckedGuestsMatts(int mattId) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
 	
 }
