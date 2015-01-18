@@ -503,6 +503,26 @@ public class FesBes1 implements IFesBes1 {
 	}
 
 	@Override
+	public List<Matt> getCheckedGuestsMatts(int mattId) {
+		Integer gMattId = null;
+		Matt tmpMatt = null;
+		List<Matt> chGuestsMatts = new ArrayList<Matt>();
+	    Query query = em.createQuery("select n from NotificationEntity n where n.matt_id= :mattId");
+	    query.setParameter("mattId", mattId);
+	    List<NotificationEntity> noteList = query.getResultList();
+	    if(noteList!=null)
+	    	for(NotificationEntity ne: noteList){
+	    		gMattId = ne.getChecked_fl();
+	    		if(gMattId!=null && gMattId > 0){
+	    			tmpMatt = getMatt(gMattId);
+	    			if(tmpMatt!=null)
+	    				chGuestsMatts.add(tmpMatt);
+	    		}
+	    	}
+		return chGuestsMatts;
+	}
+
+	@Override
 	public List<Notification> getNotifications(String guestName) {
 	    List<NotificationEntity> noteList=null;
 	    List<Notification> rt = new LinkedList<>();
@@ -656,11 +676,4 @@ public class FesBes1 implements IFesBes1 {
 		return result;
 		}
 
-		@Override
-		public List<Matt> getCheckedGuestsMatts(int mattId) {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-	
 }

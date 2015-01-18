@@ -20,7 +20,7 @@ public class NotificationEntity {
 	@Index(name="ind_usr_email")
 	String guest_email;
 	
-	Boolean checked_fl=false;
+	Integer checked_fl=null;
 	
 	public NotificationEntity(){}
 
@@ -47,10 +47,10 @@ public class NotificationEntity {
 	public void setGuest_email(String guest_email) {
 		this.guest_email = guest_email;
 	}
-	public Boolean getChecked_fl() {
+	public Integer getChecked_fl() {
 		return checked_fl;
 	}
-	public void setChecked_fl(Boolean checked_fl) {
+	public void setChecked_fl(Integer checked_fl) {
 		this.checked_fl = checked_fl;
 	}
 	
