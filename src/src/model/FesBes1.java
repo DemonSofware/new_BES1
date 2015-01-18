@@ -262,6 +262,12 @@ public class FesBes1 implements IFesBes1 {
 		return result;
 	}
 	
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
+	@Override
+	public int saveGuestsMatt(int mattId, Matt newGuestMatt, String guestName) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 	
 	
 	
