@@ -265,8 +265,25 @@ public class FesBes1 implements IFesBes1 {
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
 	public int saveGuestsMatt(int mattId, Matt newGuestMatt, String guestName) {
-		// TODO Auto-generated method stub
-		return 0;
+		int result=0;
+		int resUpdate=0;
+		if (mattId > 0 && newGuestMatt != null && guestName != null) {
+			Query queryMatt = em.createQuery("select m from MattInfoEntity m where m.matt_id = :mattId");
+			Query queryNot = em.createQuery("update NotificationEntity n set n.checked_fl = :guestMattId where n.matt_id = :mattId and n.guest_email = :guestEmail");
+			queryMatt.setParameter("mattId", mattId);
+			List<MattInfoEntity> entity = queryMatt.getResultList();
+			if(entity!=null && entity.size()>0){
+				result = saveMatt(newGuestMatt, entity.get(0).getPersonEntity().getEmail());
+				if(result>0){
+					queryNot.setParameter("guestMattId", result);
+					queryNot.setParameter("mattId", mattId);
+					queryNot.setParameter("guestEmail", guestName);
+					resUpdate = queryNot.executeUpdate();
+				}
+				System.out.println("count rows "+resUpdate);
+			}
+		}
+		return result;
 	}
 	
 	
