@@ -458,7 +458,7 @@ public class FesBes1 implements IFesBes1 {
 	public HashMap<Integer, String> getMattNames(String username) {
 		HashMap<Integer, String> result=new HashMap<Integer, String>(); 
 		PersonEntity prs = getPEbyEmail(username);
-		 String str = "Select m from MattInfoEntity m where m.personEntity = :user";
+		 String str = "Select m from MattInfoEntity m where m.personEntity = :user and m.name != null";
 		 Query query = em.createQuery(str); //sending query
 		 query.setParameter("user", prs);
 		 ArrayList<MattInfoEntity> listOfMats = (ArrayList<MattInfoEntity>) (query.getResultList()); //getting result list
