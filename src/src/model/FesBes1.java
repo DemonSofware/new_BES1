@@ -549,7 +549,7 @@ public class FesBes1 implements IFesBes1 {
 	public List<Notification> getNotifications(String guestName) {
 	    List<NotificationEntity> noteList=null;
 	    List<Notification> rt = new LinkedList<>();
-	    Query query = em.createQuery("select n from NotificationEntity n where n.guest_email= :guestName");
+	    Query query = em.createQuery("select n from NotificationEntity n where n.guest_email= :guestName and n.checked_fl = null");
 	    query.setParameter("guestName", guestName);
 	    noteList = query.getResultList();
 	    if (noteList != null && !noteList.isEmpty())
