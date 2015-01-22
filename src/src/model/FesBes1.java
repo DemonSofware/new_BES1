@@ -421,7 +421,7 @@ public class FesBes1 implements IFesBes1 {
 		return (entity != null) ? 
 				getMattFromMattEntity(entity, entity.getPersonEntity().getEmail()) : null; 
 	}
-	
+
 	
 	
 	private ArrayList<Boolean> getSlotsFromDB(MattInfoEntity mattEntity) {
@@ -433,9 +433,8 @@ public class FesBes1 implements IFesBes1 {
 		List<MattSlots> mattSlots = mattEntity.getSlots();
 		if (mattSlots != null)
 			for (MattSlots mattSlot : mattSlots)
-				//TODO check if we should put true/false in the list
+				//check if we should put true/false in the list
 				slotsFromDB.set(mattSlot.getSlot_number(), false);
-			
 		return slotsFromDB;
 	}
 
@@ -526,10 +525,10 @@ public class FesBes1 implements IFesBes1 {
 	}
 
 	@Override
-	public List<Matt> getCheckedGuestsMatts(int mattId) {
+	public HashMap<String, String> getCheckedGuestsMatts(int mattId) {
 		Integer gMattId = null;
 		Matt tmpMatt = null;
-		List<Matt> chGuestsMatts = new ArrayList<Matt>();
+		HashMap<String, String> chGuestsMatts = new HashMap<String, String>();
 	    Query query = em.createQuery("select n from NotificationEntity n where n.matt_id= :mattId");
 	    query.setParameter("mattId", mattId);
 	    List<NotificationEntity> noteList = query.getResultList();
@@ -539,7 +538,7 @@ public class FesBes1 implements IFesBes1 {
 	    		if(gMattId!=null && gMattId > 0){
 	    			tmpMatt = getMatt(gMattId);
 	    			if(tmpMatt!=null)
-	    				chGuestsMatts.add(tmpMatt);
+	    				chGuestsMatts.put(ne.guest_email, tmpMatt.matt2browser());
 	    		}
 	    	}
 		return chGuestsMatts;
@@ -570,19 +569,28 @@ public class FesBes1 implements IFesBes1 {
 	   return rt;
 	 }
 	
-	
 	@Override
 	@Transactional(readOnly=false, propagation=Propagation.REQUIRES_NEW)
 	public boolean setGuests(int matt_id, String [] guestEmails) {
 		Boolean result=false;
 		MattInfoEntity mattInfo = em.find(MattInfoEntity.class, matt_id);
+		NotificationEntity notification = null;
 			if (mattInfo!= null){
 				result=true;
 				for(int i=0;i<guestEmails.length;i++){
-					NotificationEntity notification = new NotificationEntity(mattInfo, guestEmails[i]);
+					for(NotificationEntity not: mattInfo.getNotifications())
+						if(not.guest_email.equals(guestEmails[i])){
+							removeMatt(not.checked_fl);
+							not.checked_fl = null;
+							notification = not;
+							break;
+						}
+					if(notification == null)	
+						notification = new NotificationEntity(mattInfo, guestEmails[i]);
 					em.persist(notification);
+					notification = null;
 				}
-			iBackCon.sendInvitation(mattInfo.getPersonEntity().getEmail(), 
+				iBackCon.sendInvitation(mattInfo.getPersonEntity().getEmail(), 
 					mattInfo.getPersonEntity().getName(), mattInfo.getName(), guestEmails);
 			}
 			return result;
