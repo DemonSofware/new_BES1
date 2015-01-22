@@ -580,8 +580,10 @@ public class FesBes1 implements IFesBes1 {
 				for(int i=0;i<guestEmails.length;i++){
 					for(NotificationEntity not: mattInfo.getNotifications())
 						if(not.guest_email.equals(guestEmails[i])){
-							removeMatt(not.checked_fl);
-							not.checked_fl = null;
+							if(not.checked_fl!=null){
+								removeMatt(not.checked_fl);
+								not.checked_fl = null;
+							}
 							notification = not;
 							break;
 						}
