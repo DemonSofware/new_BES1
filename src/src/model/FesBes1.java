@@ -687,15 +687,18 @@ public class FesBes1 implements IFesBes1 {
 
 		@Override
 		public String[] getGuests(int mattId) {
-			Query query = em.createQuery("select e from NotificationEntity e join e.mattInfo m where m.matt_id = :matt_id");
-			query.setParameter("matt_id", mattId);
-			List<NotificationEntity> nf = query.getResultList();
-			if(nf!=null){
-				String[] result = new String[nf.size()];
-				int ind = 0;
-				for(NotificationEntity ne: nf)
-					result[ind++] = ne.getGuest_email();
-				return result;
+			if(mattId > 0){
+				Query query = em.createQuery("select n from NotificationEntity n where n.mattInfo = :mattInfo");
+				MattInfoEntity mattInfo = em.find(MattInfoEntity.class, mattId);
+				query.setParameter("mattInfo", mattInfo);
+				List<NotificationEntity> nf = query.getResultList();
+				if(nf!=null){
+					String[] result = new String[nf.size()];
+					int ind = 0;
+					for(NotificationEntity ne: nf)
+						result[ind++] = ne.getGuest_email();
+					return result;
+				}
 			}
 			return null;
 		}
