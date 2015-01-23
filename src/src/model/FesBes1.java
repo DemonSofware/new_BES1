@@ -529,18 +529,23 @@ public class FesBes1 implements IFesBes1 {
 		Integer gMattId = null;
 		Matt tmpMatt = null;
 		HashMap<String, String> chGuestsMatts = new HashMap<String, String>();
-	    Query query = em.createQuery("select n from NotificationEntity n where n.matt_id= :mattId");
-	    query.setParameter("mattId", mattId);
-	    List<NotificationEntity> noteList = query.getResultList();
-	    if(noteList!=null)
-	    	for(NotificationEntity ne: noteList){
-	    		gMattId = ne.getChecked_fl();
-	    		if(gMattId!=null && gMattId > 0){
-	    			tmpMatt = getMatt(gMattId);
-	    			if(tmpMatt!=null)
-	    				chGuestsMatts.put(ne.guest_email, tmpMatt.matt2browser());
-	    		}
-	    	}
+		if(mattId > 0){
+		    Query query = em.createQuery("select n from NotificationEntity n where n.mattInfo= :mattInfo");
+			MattInfoEntity mattInfo = em.find(MattInfoEntity.class, mattId);
+			if (mattInfo!=null){
+			    query.setParameter("mattInfo", mattInfo);
+			    List<NotificationEntity> noteList = query.getResultList();
+			    if(noteList!=null)
+			    	for(NotificationEntity ne: noteList){
+			    		gMattId = ne.getChecked_fl();
+			    		if(gMattId!=null && gMattId > 0){
+			    			tmpMatt = getMatt(gMattId);
+			    			if(tmpMatt!=null)
+			    				chGuestsMatts.put(ne.guest_email, tmpMatt.matt2browser());
+			    		}
+			    	}
+			}
+		}
 		return chGuestsMatts;
 	}
 
