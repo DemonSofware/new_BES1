@@ -580,22 +580,26 @@ public class FesBes1 implements IFesBes1 {
 		Boolean result=false;
 		MattInfoEntity mattInfo = em.find(MattInfoEntity.class, matt_id);
 		NotificationEntity notification = null;
+		List<NotificationEntity> lNot = null;
 			if (mattInfo!= null){
 				result=true;
 				for(int i=0;i<guestEmails.length;i++){
-					for(NotificationEntity not: mattInfo.getNotifications())
-						if(not.guest_email.equals(guestEmails[i])){
-							if(not.checked_fl!=null){
-								removeMatt(not.checked_fl);
-								not.checked_fl = null;
+					lNot = mattInfo.getNotifications();
+					if(lNot!=null)
+						for(NotificationEntity not: lNot)
+							if(not.guest_email.equals(guestEmails[i])){
+								if(not.checked_fl!=null){
+									removeMatt(not.checked_fl);
+									not.checked_fl = null;
+								}
+								notification = not;
+								break;
 							}
-							notification = not;
-							break;
-						}
 					if(notification == null)	
 						notification = new NotificationEntity(mattInfo, guestEmails[i]);
 					em.persist(notification);
 					notification = null;
+					lNot = null;
 				}
 				iBackCon.sendInvitation(mattInfo.getPersonEntity().getEmail(), 
 					mattInfo.getPersonEntity().getName(), mattInfo.getName(), guestEmails);
