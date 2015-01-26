@@ -21,7 +21,8 @@ public class PersonEntity {
 	String password;
 	boolean isActive;
 	String hashCode;
-	int timeZone;
+	int timeZone = 0;
+	String timeZoneId;
 	
 	@OneToMany (mappedBy="personEntity")
 	List<MattInfoEntity> mattInfo;
@@ -30,7 +31,7 @@ public class PersonEntity {
 		this.name = person.getName();
 		this.email = person.getEmail();
 		this.password = person.getPassword();
-		this.timeZone=person.getTimeZone();
+		this.timeZoneId=person.getTimeZone().getID();
 		this.isActive = false;
 	}
 	
@@ -99,12 +100,12 @@ public class PersonEntity {
 		return true;
 	}
 
-	public int getTimeZone() {
-		return timeZone;
+	public TimeZone getTimeZone() {
+		return TimeZone.getTimeZone(timeZoneId);
 	}
 
-	public void setTimeZone(int timeZone) {
-		this.timeZone = timeZone;
+	public void setTimeZone(TimeZone timeZone) {
+		this.timeZoneId = timeZone.getID();
 	}
 	
 //	@ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
