@@ -262,23 +262,27 @@ public class FesBes1 implements IFesBes1 {
 		return result;
 	}
 	
-	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	public int saveGuestsMatt(int mattId, Matt newGuestMatt, String guestName) {
 		int result=0;
 		int resUpdate=0;
 		if (mattId > 0 && newGuestMatt != null && guestName != null) {
-			Query queryMatt = em.createQuery("select m from MattInfoEntity m where m.matt_id = :mattId");
-			Query queryNot = em.createQuery("update NotificationEntity n set n.checked_fl = :guestMattId where n.mattInfo = :mattInfo and n.guest_email = :guestEmail");
-			queryMatt.setParameter("mattId", mattId);
-			List<MattInfoEntity> entity = queryMatt.getResultList();
-			if(entity!=null && entity.size()>0){
-				result = saveMatt(newGuestMatt, entity.get(0).getPersonEntity().getEmail());
+			MattInfoEntity mattInfo = em.find(MattInfoEntity.class, mattId);
+			Query queryNot = em.createQuery("select n from NotificationEntity n join n.mattInfo m where m.matt_id = :mattId and n.guest_email = :guestEmail");
+			if(mattInfo!=null){
+				result = saveMatt(newGuestMatt, mattInfo.getPersonEntity().getEmail());
 				if(result>0){
-					queryNot.setParameter("guestMattId", result);
-					queryNot.setParameter("mattInfo", entity.get(0));
+//					queryNot.setParameter("guestMattId", result);
+					queryNot.setParameter("mattId", mattId);
 					queryNot.setParameter("guestEmail", guestName);
-					resUpdate = queryNot.executeUpdate();
+//					resUpdate = queryNot.executeUpdate();
+					NotificationEntity not = (NotificationEntity) queryNot.getSingleResult();
+					not = em.find(NotificationEntity.class, not.getNote_id());
+					if(not!=null)
+						not.setChecked_fl(result);
+					em.flush();
+//					em.refresh(not);
 				}
 //				System.out.println("count rows "+resUpdate);
 			}
@@ -525,20 +529,21 @@ public class FesBes1 implements IFesBes1 {
 	}
 
 	@Override
+	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	public HashMap<String, String> getCheckedGuestsMatts(int mattId) {
-		Integer gMattId = null;
+		int gMattId = 0;
 		Matt tmpMatt = null;
 		HashMap<String, String> chGuestsMatts = new HashMap<String, String>();
 		if(mattId > 0){
-		    Query query = em.createQuery("select n from NotificationEntity n where n.mattInfo= :mattInfo");
 			MattInfoEntity mattInfo = em.find(MattInfoEntity.class, mattId);
-			if (mattInfo!=null){
+		    Query query = em.createQuery("select n from NotificationEntity n where n.mattInfo= :mattInfo");
+		    if (mattInfo!=null){
 			    query.setParameter("mattInfo", mattInfo);
 			    List<NotificationEntity> noteList = query.getResultList();
 			    if(noteList!=null)
 			    	for(NotificationEntity ne: noteList){
 			    		gMattId = ne.getChecked_fl();
-			    		if(gMattId!=null && gMattId > 0){
+			    		if(gMattId > 0){
 			    			tmpMatt = getMatt(gMattId);
 			    			if(tmpMatt!=null)
 			    				chGuestsMatts.put(ne.guest_email, tmpMatt.matt2browser());
@@ -550,10 +555,10 @@ public class FesBes1 implements IFesBes1 {
 	}
 
 	@Override
-	public List<Notification> getNotifications(String guestName) {
-	    List<NotificationEntity> noteList=null;
+	public List<Notification> getNotifications(String guestName) {	  
+		List<NotificationEntity> noteList=null;
 	    List<Notification> rt = new LinkedList<>();
-	    Query query = em.createQuery("select n from NotificationEntity n where n.guest_email= :guestName and n.checked_fl = null");
+	    Query query = em.createQuery("select n from NotificationEntity n where n.guest_email= :guestName and n.checked_fl = 0");
 	    query.setParameter("guestName", guestName);
 	    noteList = query.getResultList();
 	    if (noteList != null && !noteList.isEmpty())
@@ -588,9 +593,9 @@ public class FesBes1 implements IFesBes1 {
 					if(lNot!=null)
 						for(NotificationEntity not: lNot)
 							if(not.guest_email.equals(guestEmails[i])){
-								if(not.checked_fl!=null){
+								if(not.checked_fl!=0){
 									removeMatt(not.checked_fl);
-									not.checked_fl = null;
+									not.checked_fl = 0;
 								}
 								notification = not;
 								break;
