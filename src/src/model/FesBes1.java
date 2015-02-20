@@ -31,15 +31,15 @@ public class FesBes1 implements IFesBes1 {
 	public int setProfile(Person person) {
 		int result = Response.UNKNOWN;
 		if (person != null) {
-			PersonEntity currentPE = getPEbyEmail(person.getEmail()); //currentPE is a personEntity with considered email from database
-			if (currentPE == null) {								//currentPE not exists
-				currentPE = new PersonEntity(person);
-				currentPE.setHashCode(UUID.randomUUID().toString());		//create unique confirmation code for person
-				em.persist(currentPE);  
-				launchActivation(currentPE);								//launch activate mechanism
+			PersonEntity prsEntity = em.find(PersonEntity.class, person.getEmail());
+			if (prsEntity == null) {
+				prsEntity = new PersonEntity(person);
+				prsEntity.setHashCode(UUID.randomUUID().toString());//create unique confirmation code for person
+				em.persist(prsEntity);  
+				launchActivation(prsEntity);//launch activate mechanism
 				result = Response.OK;
-			} else {													//currentPE exists, checking activation status
-				if (currentPE.isActive() == false)
+			} else {	//currentPE exists, checking activation status
+				if (prsEntity.isActive() == false)
 					result = Response.PROFILE_EXISTS_INACTIVE;
 				else
 					result = Response.PROFILE_EXISTS_ACTIVE;
@@ -49,8 +49,7 @@ public class FesBes1 implements IFesBes1 {
 	}
 
 //populating user SN list ***********not in usage from 9.12.2014*********
-	@SuppressWarnings("unchecked")
-	@Transactional (readOnly=false, propagation=Propagation.REQUIRED)
+/*	@Transactional (readOnly=false, propagation=Propagation.REQUIRED)
 	private Set<SocialNetworkEntity> getSocialNetworks(String[] snNames) {
 		List<SocialNetworkEntity> snFromDB;
 		//List<SocialNetworkEntity> personSocialNetworks = new ArrayList<SocialNetworkEntity>();
@@ -69,11 +68,11 @@ public class FesBes1 implements IFesBes1 {
 		}
 		return personSocialNetworks;
 	}
-
+*/
 
 	@Override
-	public int matLogin(String email, String password) {
-		PersonEntity pe = getPEbyEmail(email); // looking for person in database by email
+	public int matLogin(String userName, String password) {
+		PersonEntity pe = em.find(PersonEntity.class, userName); // looking for person in database by email
 		int result;
 		 if (pe == null)							//person not found
 			 result = Response.NO_REGISTRATION;
@@ -89,16 +88,14 @@ public class FesBes1 implements IFesBes1 {
 	}
 	
 	@Override
-	public int ifEmailExistsInDB(String email){
-		PersonEntity pe = getPEbyEmail(email); // looking for person in database by email
-		int result;
+	public int ifEmailExistsInDB(String userName){
+		int result = Response.NO_REGISTRATION;
+		PersonEntity pe = em.find(PersonEntity.class, userName); // looking for person in database by email
 		if (pe != null){						//person not found
 			if (pe.isActive() == false)			//person found, but not active
 				 result = Response.IN_ACTIVE;
 			else result=Response.OK;
 		} 
-		else result = Response.NO_REGISTRATION;
-		
 		return result;
 	}
 
@@ -129,28 +126,31 @@ public class FesBes1 implements IFesBes1 {
 							slotNums.add(i);
 							result.put(calendar.getTime(), slotNums);
 						}				
-						
 					}
 				}
+			}
 		}
-		}
-		
 		return result;
 	}
 	
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
-	public int saveMatt(Matt mattNew, String username) {
-		int result=0;
-		if (mattNew != null && username != null) {
-			//determine person_id by username
-			PersonEntity prs = getPEbyEmail(username);
-			MattInfoEntity mattInfoEntity = checkIfMattIsAlreadyExists(mattNew, prs);
+	public int saveMatt(Matt mattNew, String userName) {
+		int mattId = -1;
+		MattInfoEntity mattInfoEntity = null;
+		if (mattNew != null && userName != null) {
+			//determine person_id by userName
+			PersonEntity prs = em.find(PersonEntity.class, userName);
+			if(prs == null) return -1;
+			if(mattNew.getData()!=null) 
+				mattId = mattNew.getData().getMattId();
+			if(mattId>0) 
+				mattInfoEntity = em.find(MattInfoEntity.class, mattId);
 			if (mattInfoEntity != null){ 
 				//if true - the Matt is exists in DB and we should perform updating of existing Matt.
 				//otherwise (if false) - saving New Matt
-				result=mattInfoEntity.getMatt_id();
+				mattId=mattInfoEntity.getMatt_id();
 				//check if slots were changed
 				if(!getSlotsFromDB(mattInfoEntity).equals(mattNew.getSlots())){
 					//deleting existing slots from DB
@@ -159,8 +159,6 @@ public class FesBes1 implements IFesBes1 {
 					//saving new slots
 					mattInfoEntity.setSlots(createListOfMattSlots(mattNew, mattInfoEntity));
 				}
-				
-				
 				mattInfoEntity.setName(mattNew.getData().getName());
 				mattInfoEntity.setEndHour(mattNew.getData().getEndHour());
 				mattInfoEntity.setnDays(mattNew.getData().getnDays());
@@ -211,87 +209,78 @@ public class FesBes1 implements IFesBes1 {
 			}
 			else {
 		//saving to DB if newMatt name unique for the user
-				
 				//creating MattInfoEntity
-					MattData data = mattNew.getData();
-					MattInfoEntity mattInfo = new MattInfoEntity(data.getName(), data.getPassword(), 
-							data.getnDays(), data.getStartDate(), data.getStartHour(), 
-							data.getEndHour(), data.getTimeSlot(), prs);
+				MattData data = mattNew.getData();
+				MattInfoEntity mattInfo = new MattInfoEntity(data.getName(), data.getPassword(), 
+						data.getnDays(), data.getStartDate(), data.getStartHour(), 
+						data.getEndHour(), data.getTimeSlot(), prs);
 				//creating List<MattSlots> to save slots to DB
-					mattInfo.setSlots(createListOfMattSlots(mattNew, mattInfo));
-					em.persist(mattInfo);
-					result=mattInfo.getMatt_id();
-					//set snCalendars 
-					LinkedList<SnCalendarsEntity> snCalendars = new LinkedList<>();
-					//checking if SN [] to download is not null
-					String [] snDownload = mattNew.getData().getDownloadSN();
-					if(snDownload != null && snDownload[0] != null){
-						//passing through array of SNs and getting all calendar names for each SN
-						for(int i=0; i<snDownload.length; i++){
-							List<String> downloadCalendarName = mattNew.getData().getDownloadCalendars(snDownload[i]);
-							//getting SocialNetworkEntity instance from DB
-							SocialNetworkEntity snEntity = getSNInstanceFromDB(snDownload[i]);
-							//creating separate SnCalendarsEntity for each Calendar.
-							//Add the entity to Calendars to Download list
-							for(String calendName: downloadCalendarName)
-								snCalendars.add(new SnCalendarsEntity(mattInfo, snEntity, 
-										SnCalendarsEntity.DOWNLOAD, calendName));
-						}
+				mattInfo.setSlots(createListOfMattSlots(mattNew, mattInfo));
+				em.persist(mattInfo);
+				mattId=mattInfo.getMatt_id();
+				//set snCalendars 
+				LinkedList<SnCalendarsEntity> snCalendars = new LinkedList<>();
+				//checking if SN [] to download is not null
+				String [] snDownload = mattNew.getData().getDownloadSN();
+				if(snDownload != null && snDownload[0] != null){
+					//passing through array of SNs and getting all calendar names for each SN
+					for(int i=0; i<snDownload.length; i++){
+						List<String> downloadCalendarName = mattNew.getData().getDownloadCalendars(snDownload[i]);
+						//getting SocialNetworkEntity instance from DB
+						SocialNetworkEntity snEntity = getSNInstanceFromDB(snDownload[i]);
+						//creating separate SnCalendarsEntity for each Calendar.
+						//Add the entity to Calendars to Download list
+						for(String calendName: downloadCalendarName)
+							snCalendars.add(new SnCalendarsEntity(mattInfo, snEntity, 
+									SnCalendarsEntity.DOWNLOAD, calendName));
 					}
-					//checking if SN [] to upload is not null
-					String [] snUpload = mattNew.getData().getUploadSN();
-					if (snUpload != null && snUpload[0] != null){
-						//passing through array of SNs and getting all calendar names for each SN
-						for(int i=0; i<snUpload.length; i++){
-							List<String> uploadCalendarName = mattNew.getData().getUploadCalendars(snUpload[i]);
-							//getting SocialNetworkEntity instance from DB
-							SocialNetworkEntity snEntity = getSNInstanceFromDB(snUpload[i]);
-							//creating separate SnCalendarsEntity for each Calendar.
-							//Add the entity to Calendars to Download list
-							for(String calendName: uploadCalendarName)
-								snCalendars.add(new SnCalendarsEntity(mattInfo, snEntity, 
-										SnCalendarsEntity.UPLOAD, calendName));
-						}
+				}
+				//checking if SN [] to upload is not null
+				String [] snUpload = mattNew.getData().getUploadSN();
+				if (snUpload != null && snUpload[0] != null){
+					//passing through array of SNs and getting all calendar names for each SN
+					for(int i=0; i<snUpload.length; i++){
+						List<String> uploadCalendarName = mattNew.getData().getUploadCalendars(snUpload[i]);
+						//getting SocialNetworkEntity instance from DB
+						SocialNetworkEntity snEntity = getSNInstanceFromDB(snUpload[i]);
+						//creating separate SnCalendarsEntity for each Calendar.
+						//Add the entity to Calendars to Download list
+						for(String calendName: uploadCalendarName)
+							snCalendars.add(new SnCalendarsEntity(mattInfo, snEntity, 
+								SnCalendarsEntity.UPLOAD, calendName));
 					}
-					mattInfo.setSncalendars(snCalendars); //setting new snCalendar list
+				}
+				mattInfo.setSncalendars(snCalendars); //setting new snCalendar list
 			}
 		}
-		return result;
+		return mattId;
 	}
 	
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
 	public int saveGuestsMatt(int mattId, Matt newGuestMatt, String guestName) {
 		int result=0;
-		int resUpdate=0;
 		if (mattId > 0 && newGuestMatt != null && guestName != null) {
-			Query queryMatt = em.createQuery("select m from MattInfoEntity m where m.matt_id = :mattId");
+			MattInfoEntity mattInfoEntity = em.find(MattInfoEntity.class, mattId);
 			Query queryNot = em.createQuery("update NotificationEntity n set n.checked_fl = :guestMattId where n.mattInfo = :mattInfo and n.guest_email = :guestEmail");
-			queryMatt.setParameter("mattId", mattId);
-			List<MattInfoEntity> entity = queryMatt.getResultList();
-			if(entity!=null && entity.size()>0){
-				result = saveMatt(newGuestMatt, entity.get(0).getPersonEntity().getEmail());
+			if(mattInfoEntity!=null){
+				result = saveMatt(newGuestMatt, mattInfoEntity.getPersonEntity().getEmail());
 				if(result>0){
 					queryNot.setParameter("guestMattId", result);
-					queryNot.setParameter("mattInfo", entity.get(0));
+					queryNot.setParameter("mattInfo", mattInfoEntity);
 					queryNot.setParameter("guestEmail", guestName);
-					resUpdate = queryNot.executeUpdate();
+					queryNot.executeUpdate();
 				}
-//				System.out.println("count rows "+resUpdate);
 			}
 		}
 		return result;
 	}
 	
-	
-	
 	//getting SocialNetworkEntity instance from DB
 	private SocialNetworkEntity getSNInstanceFromDB(String snName) {
-		
 		Query query = em.createQuery("SELECT sn FROM SocialNetworkEntity sn where sn.name= :snName");
 		query.setParameter("snName", snName);
 		return (SocialNetworkEntity) query.getSingleResult();
-		
 	}
 
 	//creating List<BusySlotEntity> to save slots to DB
@@ -306,27 +295,14 @@ public class FesBes1 implements IFesBes1 {
 					busySlots.add(new BusySlotEntity(entry.getKey(), slot_num, mattInfoEntity));
 				}	
 			}
-	}
+		}
 		return busySlots;
 	}
 
-	private MattInfoEntity checkIfMattIsAlreadyExists(Matt mattNew, PersonEntity prs) {
-		//checking if there is no Matt with this name for this user
-			Query query = em.createQuery("select m from MattInfoEntity m "
-					+ "where m.name = :mattName and m.personEntity= :person");
-			query.setParameter("mattName", mattNew.getData().getName());
-			query.setParameter("person", prs);
-			List<MattInfoEntity> entity = query.getResultList();
-		return entity.size() > 0 ? entity.get(0) : null;
-	}
-
 	@Override
-	public void updateMatCalendarInSN(String username, String snName) { //updating Mat Calendars in SN
-		if (username != null && snName != null){
-			PersonEntity prs = getPEbyEmail(username);
-		//getting String[] of SN names
-			String [] snNames = {snName};
-		
+	public void updateMatCalendarInSN(String userName, String snName) { //updating Mat Calendars in SN
+		if (userName != null && snName != null){
+			PersonEntity prs = em.find(PersonEntity.class, userName);
 		//building list of actual MATTs	for current user
 		// 1 - creating Query to select all actual for today Matt names for this user
 		// using native SQL for mySQL server, because JPQL currently doesn't support required DATE operations
@@ -337,7 +313,7 @@ public class FesBes1 implements IFesBes1 {
 			//1. select all MATTs for the user
 			Query query = em.createQuery("select m from MattInfoEntity m where m.personEntity= :person");
 			query.setParameter("person", prs);
-			List<MattInfoEntity> allMattEntities=query.getResultList();
+			List<MattInfoEntity> allMattEntities = query.getResultList();
 			List<Matt> actualUserMatts = new LinkedList<Matt>();
 			if(allMattEntities != null && !allMattEntities.isEmpty()){
 				Calendar today = new GregorianCalendar();
@@ -345,14 +321,12 @@ public class FesBes1 implements IFesBes1 {
 				for(MattInfoEntity entity:allMattEntities){
 					today.add(Calendar.DATE, -entity.getnDays());
 					if (entity.getStartDate().compareTo(today.getTime()) >= 0)
-						actualUserMatts.add(getMattFromMattEntity(entity, username));
+						actualUserMatts.add(getMattFromMattEntity(entity, userName));
 				}
 			}
 		
 		}
 	}
-
-
 
 	private Matt getMattFromMattEntity(MattInfoEntity entity, String username) {
 		Matt matt = new Matt();
@@ -379,7 +353,6 @@ public class FesBes1 implements IFesBes1 {
 						calendarNames[1].add(calend.getCalendarName());
 						snCalendars.replace(calend.getSocial_net().getName(), calendarNames);
 					}
-					
 				}
 				else { //adding new key
 					List<String>[] newCalendarNames = new List[2]; //creating array of Lists
@@ -392,10 +365,8 @@ public class FesBes1 implements IFesBes1 {
 						newCalendarNames[1] = new ArrayList<String>();
 						newCalendarNames[1].add(calend.getCalendarName());
 						snCalendars.put(calend.getSocial_net().getName(), newCalendarNames);
-						
 					}
 				}
-				
 			}
 			//setting snCalendars to MattData
 			mattData.setSNCalendars(snCalendars);		
@@ -413,14 +384,12 @@ public class FesBes1 implements IFesBes1 {
 	//functions call sequence: getMatt() -> getMattFromMattEntity() -> getSlotsFromDB()
 	public Matt getMatt(int matt_id) {
 		MattInfoEntity entity = em.find(MattInfoEntity.class, matt_id); //looking for mattEntity by ID
-		//getting username from the entity and invoking getMattFromMattEntity() if MattEntity was found
+		//getting userName from the entity and invoking getMattFromMattEntity() if MattEntity was found
 		//returning null if MattEntity doesn't exists
 		return (entity != null) ? 
 				getMattFromMattEntity(entity, entity.getPersonEntity().getEmail()) : null; 
 	}
 
-	
-	
 	private ArrayList<Boolean> getSlotsFromDB(MattInfoEntity mattEntity) {
 	//determining number of slots and creating Boolean list with all slots marked as false.
 		int numberOfSlotsPerDay=mattEntity.getEndHour()-mattEntity.getStartHour();
@@ -435,8 +404,6 @@ public class FesBes1 implements IFesBes1 {
 		return slotsFromDB;
 	}
 
-
-
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
 	public boolean removeMatt(int matt_id) {
@@ -448,32 +415,32 @@ public class FesBes1 implements IFesBes1 {
 		}		
 		return result;
 	}
-	
 
 	@Override
-	public HashMap<Integer, String> getMattNames(String username) {
+	public HashMap<Integer, String> getMattNames(String userName) {
 		HashMap<Integer, String> result=new HashMap<Integer, String>(); 
-		PersonEntity prs = getPEbyEmail(username);
-		 String str = "Select m from MattInfoEntity m where m.personEntity = :user and m.name != null";
-		 Query query = em.createQuery(str); //sending query
-		 query.setParameter("user", prs);
-		 ArrayList<MattInfoEntity> listOfMats = (ArrayList<MattInfoEntity>) (query.getResultList()); //getting result list
-		 for(MattInfoEntity entity:listOfMats)
-		 		result.put(entity.getMatt_id(),entity.getName());
-		 return result;
+		PersonEntity prs = em.find(PersonEntity.class, userName);
+		String str = "Select m from MattInfoEntity m where m.personEntity = :user and m.name != null";
+		Query query = em.createQuery(str); //sending query
+		query.setParameter("user", prs);
+		List<MattInfoEntity> listOfMats = query.getResultList(); //getting result list
+		for(MattInfoEntity entity:listOfMats)
+		 	result.put(entity.getMatt_id(),entity.getName());
+		return result;
 	}
 
 	@Override
-	public Person getProfile(String email) {
-		PersonEntity pe = getPEbyEmail(email);
-		return new Person(pe.getName(), pe.getEmail(), pe.getPassword(), pe.getTimeZone());
+	public Person getProfile(String userName) {
+		if(userName == null) return null;
+		PersonEntity pe = em.find(PersonEntity.class, userName);
+		return pe==null ? null: new Person(pe.getName(), pe.getEmail(), pe.getPassword(), pe.getTimeZone());
 	}
 
 	@Override
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
-	public void setActive(String email, String hashcode) {
-		PersonEntity pe = getPEbyEmail(email);
-		if (pe.getHashCode().equals(hashcode))
+	public void setActive(String userName, String hashcode) {
+		PersonEntity pe = em.find(PersonEntity.class, userName);
+		if (pe != null && pe.getHashCode().equals(hashcode))
 			pe.setActive(true);
 	}
 
@@ -482,8 +449,7 @@ public class FesBes1 implements IFesBes1 {
 	public int updateProfile(Person person) {
 		int result = Response.UNKNOWN;
 		if (person != null) {
-			String email = person.getEmail();
-			PersonEntity pe = getPEbyEmail(email);
+			PersonEntity pe = em.find(PersonEntity.class, person.getEmail());
 			result = Response.NO_REGISTRATION;
 			if (pe != null) {
 				pe.setName(person.getName());
@@ -498,7 +464,7 @@ public class FesBes1 implements IFesBes1 {
 	@Transactional(readOnly=false, propagation=Propagation.REQUIRES_NEW)
 	public boolean deletePerson(String userName){
 		boolean result = false;
-		PersonEntity prs = getPEbyEmail(userName);
+		PersonEntity prs = em.find(PersonEntity.class, userName);
 		if (prs != null){
 			em.remove(prs);
 			result=true;
@@ -506,16 +472,6 @@ public class FesBes1 implements IFesBes1 {
 		return result;
 	}
 	
-	//****COMMON SERVING PRIVATE FUNCTIONS****
-	private PersonEntity getPEbyEmail(String email) {
-		Query query = em.createQuery("SELECT pe FROM PersonEntity pe WHERE pe.email=?1");
-		query.setParameter(1, email);
-		List<PersonEntity> prsList = query.getResultList();
-		if (prsList != null && !prsList.isEmpty())
-			return prsList.get(0);
-		return null;
-	}
-
 	private void launchActivation(PersonEntity pe) {
 		ISendActivationMail sender = (ISendActivationMail) ctx.getBean("sender");
 		sender.sendMail(pe);
@@ -534,7 +490,7 @@ public class FesBes1 implements IFesBes1 {
 			    List<NotificationEntity> noteList = query.getResultList();
 			    if(noteList!=null)
 			    	for(NotificationEntity ne: noteList){
-			    		gMattId = ne.getChecked_fl();
+			    		gMattId = ne.getGuestMattId();
 			    		if(gMattId!=null && gMattId > 0){
 			    			tmpMatt = getMatt(gMattId);
 			    			if(tmpMatt!=null)
@@ -550,26 +506,23 @@ public class FesBes1 implements IFesBes1 {
 	public List<Notification> getNotifications(String guestName) {
 	    List<NotificationEntity> noteList=null;
 	    List<Notification> rt = new LinkedList<>();
-	    Query query = em.createQuery("select n from NotificationEntity n where n.guest_email= :guestName and n.checked_fl = null");
+	    Query query = em.createQuery("select n from NotificationEntity n where n.guest_email= :guestName and n.guestMattId = 0");
 	    query.setParameter("guestName", guestName);
 	    noteList = query.getResultList();
 	    if (noteList != null && !noteList.isEmpty())
-	    for(NotificationEntity ne:noteList){
-	    	Notification notif = new Notification();
-	    	
-	    	notif.mattId = ne.getMattInfo().getMatt_id();
-	    	notif.mattName = ne.getMattInfo().getName();
-	    	PersonEntity person=ne.getMattInfo().getPersonEntity();
-	    	if(person != null){
-	    		notif.nameOfUser=person.getName();//or username??
-	    		notif.userEmail=person.getEmail();
-	    	}
-	    	
-	    																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																																								
-	    	rt.add(notif);
-	   	   }
-	   return rt;
-	 }
+		    for(NotificationEntity ne:noteList){
+		    	Notification notif = new Notification();
+		    	notif.mattId = ne.getMattInfo().getMatt_id();
+		    	notif.mattName = ne.getMattInfo().getName();
+		    	PersonEntity person=ne.getMattInfo().getPersonEntity();
+		    	if(person != null){
+		    		notif.nameOfUser=person.getName();
+		    		notif.userEmail=person.getEmail();
+		    	}
+		    	rt.add(notif);
+		    }
+	    return rt;
+	}
 	
 	@Override
 	@Transactional(readOnly=false, propagation=Propagation.REQUIRES_NEW)
@@ -578,144 +531,61 @@ public class FesBes1 implements IFesBes1 {
 		MattInfoEntity mattInfo = em.find(MattInfoEntity.class, matt_id);
 		NotificationEntity notification = null;
 		List<NotificationEntity> lNot = null;
-			if (mattInfo!= null){
-				result=true;
-				for(int i=0;i<guestEmails.length;i++){
-					lNot = mattInfo.getNotifications();
-					if(lNot!=null)
-						for(NotificationEntity not: lNot)
-							if(not.guest_email.equals(guestEmails[i])){
-								if(not.checked_fl!=null){
-									removeMatt(not.checked_fl);
-									not.checked_fl = null;
-								}
-								notification = not;
-								break;
+		if (mattInfo!= null){
+			result=true;
+			for(int i=0;i<guestEmails.length;i++){
+				lNot = mattInfo.getNotifications();
+				if(lNot!=null)
+					for(NotificationEntity not: lNot)
+						if(not.guest_email.equals(guestEmails[i])){
+							if(not.guestMattId!=0){
+								removeMatt(not.guestMattId);
+								not.guestMattId = 0;
 							}
+							notification = not;
+							break;
+						}
 					if(notification == null)	
 						notification = new NotificationEntity(mattInfo, guestEmails[i]);
 					em.persist(notification);
 					notification = null;
 					lNot = null;
-				}
-				iBackCon.sendInvitation(mattInfo.getPersonEntity().getEmail(), 
-					mattInfo.getPersonEntity().getName(), mattInfo.getName(), guestEmails);
 			}
-			return result;
+			iBackCon.sendInvitation(mattInfo.getPersonEntity().getEmail(), 
+				mattInfo.getPersonEntity().getName(), mattInfo.getName(), guestEmails);
+		}
+		return result;
 	}
 
-	/* ***** Deprecated Methods *******/
-		private ArrayList<Boolean> compareSlotMarks(ArrayList<Boolean> oldSlots,
-				ArrayList<Boolean> newSlots) {
-			int size = oldSlots.size();
-			ArrayList<Boolean> result = new ArrayList<Boolean>();
-			for (int i = 0; i < size; i++) {
-				if (oldSlots.get(i).booleanValue() && newSlots.get(i).booleanValue()) //building new slots array with user-marked intervals.
-					result.add(false);
-				else if (!oldSlots.get(i).booleanValue() && !newSlots.get(i).booleanValue())
-					result.add(false);
-				else result.add(true);
-			}
-			return result;
-		}
-		
-		
-		
-		//Deprecated
-		//@Override
-		public Matt createMatt(MattData data, String username)  {
-			/*
-			 * using service IBes1Bes2, described in file beans.xml bean
-			 * id="bes1bes2" property name="serviceUrl"
-			 * value="http://localhost:8080/bes1bes2_service/bes1bes2_service.service"
-			 * property name="serviceInterface" value="mat.IBackConnector"
-			 */
-			mat.Matt newMatt = null;
-			if (data != null && username != null){
-		//determine person_id by username
-			PersonEntity prs = getPEbyEmail(username);
-		//checking if there is no Matt with this name for this user
-			Query query = em.createQuery("select m from MattInfoEntity m "
-					+ "where m.name = :mattName and m.personEntity= :person");
-			query.setParameter("mattName", data.getName());
-			query.setParameter("person", prs);
-			int isMattNameDuplicated = query.getResultList().size();
-			if (isMattNameDuplicated == 0){	
-		/*getting list of user Social Networks, 
-		  invoking getSlots() function to get Boolean ArrayList of free/busy intervals.*/
-			ArrayList<Boolean> slots= getSlotsFromSN(data, username);
-		//creating new Matt
-		if (slots != null) {
-				newMatt = new mat.Matt();
-				newMatt.setData(data);
-				newMatt.setSlots(slots);
-			}
-			}
-			}
-			return newMatt;
-		}
-		
-		
-		//Deprecated
-		/* getting list of user Social Networks, 
-		   invoking getSlots() function to get Boolean ArrayList of free/busy intervals.*/
-		private ArrayList<Boolean> getSlotsFromSN(MattData data, String username) {
-			ArrayList<Boolean> slots=null;
-		//get the list of SN for the user
-		/*	PersonEntity prs = getPEbyEmail(username);
-			// TODO
-			Set<SocialNetworkEntity> snList = prs.getPersonSocialNetworks(); //PersonSocialNetworks is the field of class PersonEntity
-			
-		//if user have no selected SN building slots array with all false (i.e. free time intervals)
-			if(snList == null || snList.isEmpty()){
-				int numberOfSlotsPerDay=data.getEndHour()-data.getStartHour();
-				int slotsNumber = numberOfSlotsPerDay * data.getnDays() * FesBes1.MIN_PER_HOUR/data.getTimeSlot();
-				slots = new ArrayList<Boolean>(Collections.nCopies(slotsNumber, false));
-			}
-			else { //getting slots from SN networks
-				List<String> snNames = new LinkedList<String>();
-				for (SocialNetworkEntity sn: snList)
-					snNames.add(sn.getName());
-				//TODO
-				//slots = (ArrayList<Boolean>)iBackCon.getSlots(prs.getEmail(), snNames.toArray(new String[snNames.size()]), data); //prs.getEmail() = username
-						}*/
-			return slots;
-		}
-
-		@Override
-		public String[] getGuests(int mattId) {
-			if(mattId > 0){
-				Query query = em.createQuery("select n from NotificationEntity n where n.mattInfo = :mattInfo");
-				MattInfoEntity mattInfo = em.find(MattInfoEntity.class, mattId);
-				query.setParameter("mattInfo", mattInfo);
-				List<NotificationEntity> nf = query.getResultList();
-				if(nf!=null){
-					String[] result = new String[nf.size()];
-					int ind = 0;
-					for(NotificationEntity ne: nf)
-						result[ind++] = ne.getGuest_email();
+	@Override
+	public String[] getGuests(int mattId) {
+		if(mattId > 0){
+			Query query = em.createQuery("select n from NotificationEntity n where n.mattInfo = :mattInfo");
+			MattInfoEntity mattInfo = em.find(MattInfoEntity.class, mattId);
+			query.setParameter("mattInfo", mattInfo);
+			List<NotificationEntity> nf = query.getResultList();
+			if(nf!=null){
+				String[] result = new String[nf.size()];
+				int ind = 0;
+				for(NotificationEntity ne: nf)
+					result[ind++] = ne.getGuest_email();
 					return result;
-				}
 			}
-			return null;
 		}
+		return null;
+	}
 
-		@Override
-		public Matt updateInvitationMatt(int matt_id, String username,
-				HashMap<String, List<String>> sncalendars) {
-				
-				Matt result=getMatt(matt_id);  												// create new Matt obtained by id		
-				if(sncalendars!=null){
-					MattData resultdata=result.getData();
-					resultdata.setSNCalendars(new HashMap<String, List<String>[]>());
-					Set<Entry<String,List<String>>> start=sncalendars.entrySet();  			//create start point for mooving through HashMap
-						for(Entry<String,List<String>>entry:start){							//go around sncalendars 
-						resultdata.setDownloadCalendars(entry.getKey(), entry.getValue());	//reset result HashMap from shcalendars
-					}
-				result=iBackCon.getSlots(username, result);									//update result
-				}
-			
+	@Override
+	public Matt updateInvitationMatt(int matt_id, String username, HashMap<String, List<String>> sncalendars) {
+		Matt result=getMatt(matt_id);// create new Matt obtained by id		
+		if(sncalendars!=null){
+			MattData resultdata=result.getData();
+			resultdata.setSNCalendars(new HashMap<String, List<String>[]>());
+			Set<Entry<String,List<String>>> start=sncalendars.entrySet();//create start point for mooving through HashMap
+			for(Entry<String,List<String>>entry:start)	//go around snCalendars 
+				resultdata.setDownloadCalendars(entry.getKey(), entry.getValue());//reset result HashMap from shcalendars
+			result=iBackCon.getSlots(username, result);	//update result
+		}
 		return result;
-		}
-
+	}
 }

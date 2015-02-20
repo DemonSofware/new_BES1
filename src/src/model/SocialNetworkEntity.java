@@ -18,6 +18,8 @@ public class SocialNetworkEntity {
 	@OneToMany(targetEntity=SnCalendarsEntity.class, mappedBy="social_net", cascade=CascadeType.ALL)
 	List<SnCalendarsEntity> sn_calendars;
 	
+	public SocialNetworkEntity() {}
+	
 	public SocialNetworkEntity(String name) {
 		super();
 		this.name = name;
@@ -26,16 +28,13 @@ public class SocialNetworkEntity {
 	
 	public String getName() {return name;}
 	
-	public SocialNetworkEntity() {}
-	
 	public List<SnCalendarsEntity> getSn_calendars() {
 		return sn_calendars;
 	}
 	public void setSn_calendars(List<SnCalendarsEntity> sn_calendars) {
 		this.sn_calendars = sn_calendars;
 	}
-	
-	
+		
 	@Override
 	public int hashCode() {
 		final int prime = 31;

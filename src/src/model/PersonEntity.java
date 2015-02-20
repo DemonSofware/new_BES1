@@ -8,12 +8,10 @@ import javax.persistence.*;
 @Table(name="persons")
 public class PersonEntity {
 	@Id
-	@GeneratedValue(strategy=GenerationType.IDENTITY)
-	@Column(name="person_id")
-	int id;
-	
+	@Column(name="email_id")
+	String email;//the same as userName
+
 	String name;
-	String email;//the same as username
 	String password;
 	boolean isActive;
 	String hashCode;
@@ -31,10 +29,6 @@ public class PersonEntity {
 	}
 	
 	public PersonEntity(){}
-	
-	public int getId() {
-		return id;
-	}
 	
 	public String getEmail() {
 		return email;
@@ -102,14 +96,5 @@ public class PersonEntity {
 	public void setTimeZone(int timeZone) {
 		this.timeZone = timeZone;
 	}
-	
-//	@ManyToMany(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
-/*	@ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-	@JoinTable(name = "persons_sn", joinColumns = { 
-			@JoinColumn(name = "person_id", nullable = false) }, 
-			inverseJoinColumns = { @JoinColumn(name = "sn_id", 
-					nullable = false) })
-	@ForeignKey(name="fk_persons")
-	Set<SocialNetworkEntity> personSocialNetworks;*/
 
 }

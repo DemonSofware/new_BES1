@@ -20,7 +20,8 @@ public class NotificationEntity {
 	@Index(name="ind_usr_email")
 	String guest_email;
 	
-	Integer checked_fl=null;
+	@Column(name="guest_matt_id")
+	int guestMattId = 0;
 	
 	public NotificationEntity(){}
 
@@ -47,11 +48,11 @@ public class NotificationEntity {
 	public void setGuest_email(String guest_email) {
 		this.guest_email = guest_email;
 	}
-	public Integer getChecked_fl() {
-		return checked_fl;
+	public Integer getGuestMattId() {
+		return guestMattId;
 	}
-	public void setChecked_fl(Integer checked_fl) {
-		this.checked_fl = checked_fl;
+	public void setGuestMattId(Integer guestMattId) {
+		this.guestMattId = guestMattId;
 	}
 	
 	

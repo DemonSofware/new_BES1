@@ -18,7 +18,7 @@ public class MattInfoEntity {
 	int matt_id;
 	
 	@ManyToOne //(fetch=FetchType.EAGER)
-	@JoinColumn(name = "person_id")
+	@JoinColumn(name = "email_id")
 	@ForeignKey(name = "fk_mattsinfo_person_id")
 	PersonEntity personEntity;
 	
