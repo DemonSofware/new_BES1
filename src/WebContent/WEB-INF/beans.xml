@@ -30,7 +30,7 @@
         </property>
 </bean>
 <bean id="templateMessage" class="org.springframework.mail.SimpleMailMessage">
-    <property name="from" value="anatoly.tihonov@gmail.com"/>
+    <property name="from" value="test1.iskatel@gmail.com"/>
     <property name="subject" value="Activate"/>
 </bean>
 <bean id="sender" class= "mail.SendActivationMail">

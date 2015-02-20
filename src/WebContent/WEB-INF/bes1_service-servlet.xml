@@ -46,7 +46,7 @@
 <bean id="myDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
 <!-- Connection properties -->
         <property name="driverClass" value="com.mysql.jdbc.Driver" />
-        <property name="jdbcUrl" value="jdbc:mysql://myavailabletime.cejqwxdcufsf.us-east-1.rds.amazonaws.com/mat" />
+        <property name="jdbcUrl" value="jdbc:mysql://myavailabletime.cejqwxdcufsf.us-east-1.rds.amazonaws.com/test" />
         <property name="user" value="myavailabletime" />
         <property name="password" value="12345.com" />
 <!-- Pool properties -->

@@ -102,10 +102,7 @@ public class FesBes1 implements IFesBes1 {
 		return result;
 	}
 
-	
-
-	private Map<Date, LinkedList<Integer>> slotsBoolToMap (
-			ArrayList<Boolean> slots, MattData data) {
+	private Map<Date, LinkedList<Integer>> slotsBoolToMap (	ArrayList<Boolean> slots, MattData data) {
 		Map<Date, LinkedList<Integer> > result = new TreeMap<Date, LinkedList<Integer> >();
 		if(slots != null && !slots.isEmpty() && data!= null){
 			int size = slots.size();
@@ -149,28 +146,28 @@ public class FesBes1 implements IFesBes1 {
 		if (mattNew != null && username != null) {
 			//determine person_id by username
 			PersonEntity prs = getPEbyEmail(username);
-			MattInfoEntity entity = checkIfMattIsAlreadyExists(mattNew, prs);
-			if (entity != null){ 
+			MattInfoEntity mattInfoEntity = checkIfMattIsAlreadyExists(mattNew, prs);
+			if (mattInfoEntity != null){ 
 				//if true - the Matt is exists in DB and we should perform updating of existing Matt.
 				//otherwise (if false) - saving New Matt
-				result=entity.getMatt_id();
+				result=mattInfoEntity.getMatt_id();
 				//check if slots were changed
-				if(!getSlotsFromDB(entity).equals(mattNew.getSlots())){
+				if(!getSlotsFromDB(mattInfoEntity).equals(mattNew.getSlots())){
 					//deleting existing slots from DB
-					for(MattSlots slot: entity.getSlots())
+					for(BusySlotEntity slot: mattInfoEntity.getSlots())
 						em.remove(slot);
 					//saving new slots
-					entity.setSlots(createListOfMattSlots(mattNew, entity));
+					mattInfoEntity.setSlots(createListOfMattSlots(mattNew, mattInfoEntity));
 				}
 				
 				
-				entity.setName(mattNew.getData().getName());
-				entity.setEndHour(mattNew.getData().getEndHour());
-				entity.setnDays(mattNew.getData().getnDays());
-				entity.setPassword(mattNew.getData().getPassword());
-				entity.setStartDate(mattNew.getData().getStartDate());
-				entity.setStartHour(mattNew.getData().getStartHour());
-				entity.setTimeSlot(mattNew.getData().getTimeSlot());
+				mattInfoEntity.setName(mattNew.getData().getName());
+				mattInfoEntity.setEndHour(mattNew.getData().getEndHour());
+				mattInfoEntity.setnDays(mattNew.getData().getnDays());
+				mattInfoEntity.setPassword(mattNew.getData().getPassword());
+				mattInfoEntity.setStartDate(mattNew.getData().getStartDate());
+				mattInfoEntity.setStartHour(mattNew.getData().getStartHour());
+				mattInfoEntity.setTimeSlot(mattNew.getData().getTimeSlot());
 				//set snCalendars 
 				LinkedList<SnCalendarsEntity> snCalendars = new LinkedList<>();
 				//checking if SN [] to download is not null
@@ -184,7 +181,7 @@ public class FesBes1 implements IFesBes1 {
 						//creating separate SnCalendarsEntity for each Calendar.
 						//Add the entity to Calendars to Download list
 						for(String calendName: downloadCalendarName)
-							snCalendars.add(new SnCalendarsEntity(entity, snEntity, 
+							snCalendars.add(new SnCalendarsEntity(mattInfoEntity, snEntity, 
 									SnCalendarsEntity.DOWNLOAD, calendName));
 					}
 					
@@ -200,15 +197,15 @@ public class FesBes1 implements IFesBes1 {
 						//creating separate SnCalendarsEntity for each Calendar.
 						//Add the entity to Calendars to Download list
 						for(String calendName: uploadCalendarName)
-							snCalendars.add(new SnCalendarsEntity(entity, snEntity, 
+							snCalendars.add(new SnCalendarsEntity(mattInfoEntity, snEntity, 
 									SnCalendarsEntity.UPLOAD, calendName));
 					}
 				}
 				//saving snCalendars
-				if(entity.getSncalendars() != null && !snCalendars.equals(entity.getSncalendars())){ //if snCalendars list was changed 
-					for(SnCalendarsEntity snCal : entity.getSncalendars()) //deleting old entities from DB
+				if(mattInfoEntity.getSncalendars() != null && !snCalendars.equals(mattInfoEntity.getSncalendars())){ //if snCalendars list was changed 
+					for(SnCalendarsEntity snCal : mattInfoEntity.getSncalendars()) //deleting old entities from DB
 						em.remove(snCal);
-					entity.setSncalendars(snCalendars); //setting new snCalendar list
+					mattInfoEntity.setSncalendars(snCalendars); //setting new snCalendar list
 				}
 				
 			}
@@ -297,20 +294,20 @@ public class FesBes1 implements IFesBes1 {
 		
 	}
 
-	//creating List<MattSlots> to save slots to DB
-	private List<MattSlots> createListOfMattSlots(Matt mattNew, MattInfoEntity entity) {
+	//creating List<BusySlotEntity> to save slots to DB
+	private List<BusySlotEntity> createListOfMattSlots(Matt mattNew, MattInfoEntity mattInfoEntity) {
 		Map<Date, LinkedList<Integer> > boolSlots_toSlotNums = slotsBoolToMap(mattNew.getSlots(), mattNew.getData());
-		List<MattSlots> mattSlots = new ArrayList<MattSlots>();
+		List<BusySlotEntity> busySlots = new ArrayList<BusySlotEntity>();
 		if (!boolSlots_toSlotNums.isEmpty()){ //Map isEmpty if no user selection
 			for(Map.Entry<Date, LinkedList<Integer>> entry: boolSlots_toSlotNums.entrySet()){
 				LinkedList<Integer> slotsByDate = entry.getValue();
 			//creating list of separate MattSlots 
 				for(int slot_num : slotsByDate){
-					mattSlots.add(new MattSlots(entry.getKey(), slot_num, entity));
+					busySlots.add(new BusySlotEntity(entry.getKey(), slot_num, mattInfoEntity));
 				}	
 			}
 	}
-		return mattSlots;
+		return busySlots;
 	}
 
 	private MattInfoEntity checkIfMattIsAlreadyExists(Matt mattNew, PersonEntity prs) {
@@ -430,9 +427,9 @@ public class FesBes1 implements IFesBes1 {
 		int slotsNumber = numberOfSlotsPerDay * mattEntity.getnDays() * FesBes1.MIN_PER_HOUR/mattEntity.getTimeSlot();
 		ArrayList<Boolean> slotsFromDB = new ArrayList<Boolean>(Collections.nCopies(slotsNumber, true));
 	//taking busy slot numbers from DB and changing ArrayList values (setting to true) by the index
-		List<MattSlots> mattSlots = mattEntity.getSlots();
+		List<BusySlotEntity> mattSlots = mattEntity.getSlots();
 		if (mattSlots != null)
-			for (MattSlots mattSlot : mattSlots)
+			for (BusySlotEntity mattSlot : mattSlots)
 				//check if we should put true/false in the list
 				slotsFromDB.set(mattSlot.getSlot_number(), false);
 		return slotsFromDB;

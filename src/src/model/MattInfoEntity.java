@@ -1,7 +1,6 @@
 package model;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 
 import javax.persistence.*;
@@ -24,9 +23,9 @@ public class MattInfoEntity {
 	PersonEntity personEntity;
 	
 	
-	@OneToMany(targetEntity=MattSlots.class, mappedBy = "mattInfo", cascade = CascadeType.ALL/*, orphanRemoval=true*/)
+	@OneToMany(targetEntity=BusySlotEntity.class, mappedBy = "mattInfo", cascade = CascadeType.ALL/*, orphanRemoval=true*/)
 	@OnDelete(action=OnDeleteAction.CASCADE)
-	List<MattSlots> slots;
+	List<BusySlotEntity> slots;
 	
 	@OneToMany(targetEntity=NotificationEntity.class, mappedBy="mattInfo", cascade=CascadeType.ALL)
 	List<NotificationEntity> notifications;
@@ -47,6 +46,8 @@ public class MattInfoEntity {
 	@OneToMany(targetEntity=SnCalendarsEntity.class, mappedBy="mattInfo", cascade=CascadeType.ALL)
 	List<SnCalendarsEntity> sncalendars;
 		
+	public MattInfoEntity() {}
+
 	public MattInfoEntity(String name, String password, int nDays, Date startDate, 
 				int startHour, int endHour, int timeSlot, PersonEntity personEntity) {
 		this.name = name;
@@ -58,8 +59,6 @@ public class MattInfoEntity {
 		this.timeSlot = timeSlot;
 		this.personEntity = personEntity;
 	}
-
-	public MattInfoEntity() {}
 
 	public int getMatt_id() {
 		return matt_id;
@@ -101,11 +100,11 @@ public class MattInfoEntity {
 		this.personEntity = person;
 	}
 
-	public List<MattSlots> getSlots() {
+	public List<BusySlotEntity> getSlots() {
 		return slots;
 	}
 
-	public void setSlots(List<MattSlots> slots) {
+	public void setSlots(List<BusySlotEntity> slots) {
 		this.slots = slots;
 	}
 

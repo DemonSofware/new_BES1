@@ -4,10 +4,6 @@ import java.util.*;
 
 import javax.persistence.*;
 
-import org.hibernate.annotations.ForeignKey;
-
-import mat.Person;
-
 @Entity
 @Table(name="persons")
 public class PersonEntity {
