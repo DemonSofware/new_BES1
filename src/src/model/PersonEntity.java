@@ -12,6 +12,7 @@ public class PersonEntity {
 	String email;//the same as userName
 
 	String name;
+	String family;
 	String password;
 	boolean isActive;
 	String hashCode;
@@ -20,12 +21,19 @@ public class PersonEntity {
 	@OneToMany (mappedBy="personEntity")
 	List<MattInfoEntity> mattInfo;
 
+	@OneToMany (mappedBy="personEntity")
+	List<GroupEntity> groups;
+
 	public PersonEntity(mat.Person person){
 		this.name = person.getName();
+		this.family = person.getFamilyName();
 		this.email = person.getEmail();
 		this.password = person.getPassword();
 		this.timeZone=person.getTimeZone();
 		this.isActive = false;
+/*		if(person.getGroups()!=null)
+			for(mat.Group group: person.getGroups().values())
+				groups.add(new GroupEntity(group, this));*/
 	}
 	
 	public PersonEntity(){}
@@ -55,7 +63,6 @@ public class PersonEntity {
 		this.hashCode = hashCode;
 	}
 	
-	
 	public String getName() {
 		return name;
 	}
@@ -64,6 +71,14 @@ public class PersonEntity {
 		this.name = name;
 	}
 		
+	public String getFamily() {
+		return family;
+	}
+
+	public void setFamily(String family) {
+		this.family = family;
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -95,6 +110,22 @@ public class PersonEntity {
 
 	public void setTimeZone(int timeZone) {
 		this.timeZone = timeZone;
+	}
+
+	public List<MattInfoEntity> getMattInfo() {
+		return mattInfo;
+	}
+
+	public void setMattInfo(List<MattInfoEntity> mattInfo) {
+		this.mattInfo = mattInfo;
+	}
+
+	public List<GroupEntity> getGroups() {
+		return groups;
+	}
+
+	public void setGroups(List<GroupEntity> groups) {
+		this.groups = groups;
 	}
 
 }

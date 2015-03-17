@@ -36,6 +36,7 @@ public class FesBes1 implements IFesBes1 {
 				prsEntity = new PersonEntity(person);
 				prsEntity.setHashCode(UUID.randomUUID().toString());//create unique confirmation code for person
 				em.persist(prsEntity);  
+				
 				launchActivation(prsEntity);//launch activate mechanism
 				result = Response.OK;
 			} else {	//currentPE exists, checking activation status
@@ -47,28 +48,6 @@ public class FesBes1 implements IFesBes1 {
 		}
 		return result;
 	}
-
-//populating user SN list ***********not in usage from 9.12.2014*********
-/*	@Transactional (readOnly=false, propagation=Propagation.REQUIRED)
-	private Set<SocialNetworkEntity> getSocialNetworks(String[] snNames) {
-		List<SocialNetworkEntity> snFromDB;
-		//List<SocialNetworkEntity> personSocialNetworks = new ArrayList<SocialNetworkEntity>();
-		Set<SocialNetworkEntity> personSocialNetworks=new HashSet<SocialNetworkEntity>();
-		for(String snName: snNames){
-		//getting SN from DB
-			snFromDB= em.createQuery("select sn from SocialNetworkEntity sn where sn.name= :snName").
-					setParameter("snName", snName).getResultList();
-			if (snFromDB != null && !snFromDB.isEmpty())
-				personSocialNetworks.addAll(snFromDB);
-			else {
-				SocialNetworkEntity newSN = new SocialNetworkEntity(snName);
-				personSocialNetworks.add(newSN);
-				em.persist(newSN);
-			}
-		}
-		return personSocialNetworks;
-	}
-*/
 
 	@Override
 	public int matLogin(String userName, String password) {
@@ -132,7 +111,6 @@ public class FesBes1 implements IFesBes1 {
 		}
 		return result;
 	}
-	
 
 	@Transactional(readOnly = false, propagation = Propagation.REQUIRES_NEW)
 	@Override
@@ -150,7 +128,6 @@ public class FesBes1 implements IFesBes1 {
 			if (mattInfoEntity != null){ 
 				//if true - the Matt is exists in DB and we should perform updating of existing Matt.
 				//otherwise (if false) - saving New Matt
-				mattId=mattInfoEntity.getMatt_id();
 				//check if slots were changed
 				if(!getSlotsFromDB(mattInfoEntity).equals(mattNew.getSlots())){
 					//deleting existing slots from DB
@@ -287,12 +264,16 @@ public class FesBes1 implements IFesBes1 {
 	private List<BusySlotEntity> createListOfMattSlots(Matt mattNew, MattInfoEntity mattInfoEntity) {
 		Map<Date, LinkedList<Integer> > boolSlots_toSlotNums = slotsBoolToMap(mattNew.getSlots(), mattNew.getData());
 		List<BusySlotEntity> busySlots = new ArrayList<BusySlotEntity>();
+		BusySlotEntity tmpSE;
 		if (!boolSlots_toSlotNums.isEmpty()){ //Map isEmpty if no user selection
 			for(Map.Entry<Date, LinkedList<Integer>> entry: boolSlots_toSlotNums.entrySet()){
 				LinkedList<Integer> slotsByDate = entry.getValue();
 			//creating list of separate MattSlots 
 				for(int slot_num : slotsByDate){
-					busySlots.add(new BusySlotEntity(entry.getKey(), slot_num, mattInfoEntity));
+					tmpSE = new BusySlotEntity(entry.getKey(), slot_num, mattInfoEntity);
+					if(mattNew.getSlotsInfo()!=null && mattNew.getSlotsInfo().containsKey(slot_num))
+						tmpSE.setSlotInfo(new SlotInfoEntity(tmpSE, mattNew.getSlotsInfo().get(slot_num)));
+					busySlots.add(tmpSE);
 				}	
 			}
 		}
@@ -433,7 +414,7 @@ public class FesBes1 implements IFesBes1 {
 	public Person getProfile(String userName) {
 		if(userName == null) return null;
 		PersonEntity pe = em.find(PersonEntity.class, userName);
-		return pe==null ? null: new Person(pe.getName(), pe.getEmail(), pe.getPassword(), pe.getTimeZone());
+		return pe==null ? null: new Person(pe.getName(), pe.getFamily(), pe.getEmail(), pe.getPassword(), pe.getTimeZone());
 	}
 
 	@Override
