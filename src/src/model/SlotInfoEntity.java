@@ -9,6 +9,8 @@ import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
 
+import mat.SlotInfo;
+
 import org.hibernate.annotations.ForeignKey;
 
 @Entity
@@ -16,11 +18,11 @@ import org.hibernate.annotations.ForeignKey;
 public class SlotInfoEntity {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
-	@Column(name="slot_info_id", unique = true, nullable = false)
+	@Column(name="slot_info_id")
 	int slotInfoId;
 	
 	@OneToOne
-	@JoinColumn (name="slot_id")
+	@JoinColumn(name="slot_id")
 	@ForeignKey(name="fk_mattslots")
 	BusySlotEntity mattSlots;
 	
@@ -32,14 +34,13 @@ public class SlotInfoEntity {
 
 	public SlotInfoEntity() { }
 
-	public SlotInfoEntity(BusySlotEntity mattSlots, String nameGuest, String surnameGuest,
-			String emailGuest, String phoneGuest, String noteGuest) {
+	public SlotInfoEntity(BusySlotEntity mattSlots, SlotInfo slotInfo) {
 		this.mattSlots = mattSlots;
-		this.nameGuest = nameGuest;
-		this.surnameGuest = surnameGuest;
-		this.emailGuest = emailGuest;
-		this.phoneGuest = phoneGuest;
-		this.noteGuest = noteGuest;
+		this.nameGuest = slotInfo.getNameGuest();
+		this.surnameGuest = slotInfo.getSurnameGuest();
+		this.emailGuest = slotInfo.getEmailGuest();
+		this.phoneGuest = slotInfo.getPhoneGuest();
+		this.noteGuest = slotInfo.getNoteGuest();
 	}
 
 	public int getSlotInfoId() {
@@ -96,6 +97,68 @@ public class SlotInfoEntity {
 
 	public void setNoteGuest(String noteGuest) {
 		this.noteGuest = noteGuest;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((emailGuest == null) ? 0 : emailGuest.hashCode());
+		result = prime * result
+				+ ((nameGuest == null) ? 0 : nameGuest.hashCode());
+		result = prime * result
+				+ ((noteGuest == null) ? 0 : noteGuest.hashCode());
+		result = prime * result
+				+ ((phoneGuest == null) ? 0 : phoneGuest.hashCode());
+		result = prime * result + slotInfoId;
+		result = prime * result
+				+ ((surnameGuest == null) ? 0 : surnameGuest.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		SlotInfoEntity other = (SlotInfoEntity) obj;
+		if (emailGuest == null) {
+			if (other.emailGuest != null)
+				return false;
+		} else if (!emailGuest.equals(other.emailGuest))
+			return false;
+		if (mattSlots == null) {
+			if (other.mattSlots != null)
+				return false;
+		} else if (mattSlots.getSlot_number()!=other.mattSlots.getSlot_number())
+			return false;
+		if (nameGuest == null) {
+			if (other.nameGuest != null)
+				return false;
+		} else if (!nameGuest.equals(other.nameGuest))
+			return false;
+		if (noteGuest == null) {
+			if (other.noteGuest != null)
+				return false;
+		} else if (!noteGuest.equals(other.noteGuest))
+			return false;
+		if (phoneGuest == null) {
+			if (other.phoneGuest != null)
+				return false;
+		} else if (!phoneGuest.equals(other.phoneGuest))
+			return false;
+		if (slotInfoId != other.slotInfoId)
+			return false;
+		if (surnameGuest == null) {
+			if (other.surnameGuest != null)
+				return false;
+		} else if (!surnameGuest.equals(other.surnameGuest))
+			return false;
+		return true;
 	}
 
 }

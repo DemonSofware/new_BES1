@@ -92,9 +92,7 @@ public class SnCalendarsEntity {
 		result = prime * result
 				+ ((calendarName == null) ? 0 : calendarName.hashCode());
 		result = prime * result
-				+ ((mattInfo == null) ? 0 : mattInfo.hashCode());
-		result = prime * result
-				+ ((social_net == null) ? 0 : social_net.hashCode());
+				+ (int) (sn_calendar_id ^ (sn_calendar_id >>> 32));
 		result = prime * result + upload_download_fl;
 		return result;
 	}
@@ -116,21 +114,19 @@ public class SnCalendarsEntity {
 		if (mattInfo == null) {
 			if (other.mattInfo != null)
 				return false;
-		} else if (!mattInfo.equals(other.mattInfo))
+		} else if (mattInfo.getMatt_id()!=other.mattInfo.getMatt_id())
+			return false;
+		if (sn_calendar_id != other.sn_calendar_id)
 			return false;
 		if (social_net == null) {
 			if (other.social_net != null)
 				return false;
-		} else if (!social_net.equals(other.social_net))
+		} else if (social_net.getId()!=other.social_net.getId())
 			return false;
 		if (upload_download_fl != other.upload_download_fl)
 			return false;
 		return true;
 	}
-	
-	
-	
-	
-	
 
+	
 }

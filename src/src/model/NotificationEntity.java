@@ -2,7 +2,6 @@ package model;
 import javax.persistence.*;
 
 import org.hibernate.annotations.ForeignKey;
-import org.hibernate.annotations.Index;
 
 @Entity
 @Table(name="notifications")
@@ -10,14 +9,13 @@ public class NotificationEntity {
 	@Id
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	@Column(name="note_id")
-	long note_id;
+	int id;
 	
 	@ManyToOne
 	@JoinColumn(name="matt_id")
 	@ForeignKey(name="fk_mattsinfo_notifications")
 	MattInfoEntity mattInfo;
 	
-	@Index(name="ind_usr_email")
 	String guest_email;
 	
 	@Column(name="guest_matt_id")
@@ -31,10 +29,10 @@ public class NotificationEntity {
 	}
 	
 	public long getNote_id() {
-		return note_id;
+		return id;
 	}
-	public void setNote_id(long note_id) {
-		this.note_id = note_id;
+	public void setNote_id(int note_id) {
+		this.id = note_id;
 	}
 	public MattInfoEntity getMattInfo() {
 		return mattInfo;
@@ -54,6 +52,43 @@ public class NotificationEntity {
 	public void setGuestMattId(Integer guestMattId) {
 		this.guestMattId = guestMattId;
 	}
-	
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + guestMattId;
+		result = prime * result
+				+ ((guest_email == null) ? 0 : guest_email.hashCode());
+		result = prime * result + id;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		NotificationEntity other = (NotificationEntity) obj;
+		if (guestMattId != other.guestMattId)
+			return false;
+		if (guest_email == null) {
+			if (other.guest_email != null)
+				return false;
+		} else if (!guest_email.equals(other.guest_email))
+			return false;
+		if (id != other.id)
+			return false;
+		if (mattInfo == null) {
+			if (other.mattInfo != null)
+				return false;
+		} else if (mattInfo.getMatt_id()!=other.mattInfo.getMatt_id())
+			return false;
+		return true;
+	}
+
 	
 }
