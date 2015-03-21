@@ -475,7 +475,7 @@ public class FesBes1 implements IFesBes1 {
 			    		if(gMattId!=null && gMattId > 0){
 			    			tmpMatt = getMatt(gMattId);
 			    			if(tmpMatt!=null)
-			    				chGuestsMatts.put(ne.guest_email, tmpMatt.matt2browser());
+			    				chGuestsMatts.put(ne.guest_email, tmpMatt.mattToBrowser());
 			    		}
 			    	}
 			}
