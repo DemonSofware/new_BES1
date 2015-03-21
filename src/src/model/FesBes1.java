@@ -434,6 +434,8 @@ public class FesBes1 implements IFesBes1 {
 			result = Response.NO_REGISTRATION;
 			if (pe != null) {
 				pe.setName(person.getName());
+				pe.setFamily(person.getFamilyName());
+				pe.setPassword(person.getPassword());
 				pe.setTimeZone(person.getTimeZone());	
 				result = Response.OK;
 			}
