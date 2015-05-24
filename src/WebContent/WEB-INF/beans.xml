@@ -9,7 +9,7 @@
    							http://www.springframework.org/schema/context/spring-context-3.0.xsd">
 	
 	<bean id="iBackCon" class="org.springframework.remoting.caucho.BurlapProxyFactoryBean">
-		<property name="serviceUrl" value="http://ec2-54-166-51-117.compute-1.amazonaws.com:8080/MAT_BES2/back_connector.service"/>
+		<property name="serviceUrl" value="http://myavailabletime.noreply:8080/MAT_BES2/back_connector.service"/>
 		<property name="serviceInterface" value="mat.IBackConnector"/>
 	</bean>
 	
@@ -19,7 +19,7 @@
         <property name="port"><value>587</value></property>
         <property name="protocol"><value>smtp</value></property>
         <property name="username"><value>myavailabletime.noreply@gmail.com</value></property>
-        <property name="password"><value>myavailable</value></property>
+        <property name="password"><value>myavailable2014</value></property>
         <property name="javaMailProperties">
             <props>
                 <prop key="mail.smtp.auth">true</prop>
@@ -30,7 +30,7 @@
         </property>
 </bean>
 <bean id="templateMessage" class="org.springframework.mail.SimpleMailMessage">
-    <property name="from" value="anatoly.tihonov@gmail.com"/>
+    <property name="from" value="myavailabletime.noreply@gmail.com"/>
     <property name="subject" value="Activate"/>
 </bean>
 <bean id="sender" class= "mail.SendActivationMail">
