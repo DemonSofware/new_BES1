@@ -19,7 +19,7 @@
         <property name="port"><value>587</value></property>
         <property name="protocol"><value>smtp</value></property>
         <property name="username"><value>myavailabletime.noreply@gmail.com</value></property>
-        <property name="password"><value>myavailable</value></property>
+        <property name="password"><value>myavailable2014</value></property>
         <property name="javaMailProperties">
             <props>
                 <prop key="mail.smtp.auth">true</prop>
@@ -30,7 +30,7 @@
         </property>
 </bean>
 <bean id="templateMessage" class="org.springframework.mail.SimpleMailMessage">
-    <property name="from" value="anatoly.tihonov@gmail.com"/>
+    <property name="from" value="test.myavailabletime@gmail.com"/>
     <property name="subject" value="Activate"/>
 </bean>
 <bean id="sender" class= "mail.SendActivationMail">
